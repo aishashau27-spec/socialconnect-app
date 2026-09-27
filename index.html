@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SocialConnect by Bete Technologies</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .glass-panel { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(56, 189, 248, 0.2); }
+    .chrome-gradient { background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%); }
+    .gold-gradient { background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #d97706 100%); }
+    .neon-border { box-shadow: 0 0 15px rgba(56, 189, 248, 0.25); }
+    .gold-border { box-shadow: 0 0 15px rgba(245, 158, 11, 0.3); }
+    #poolCanvas { background: #064e3b; border: 8px solid #065f46; border-radius: 12px; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-cyan-500 selection:text-slate-950">
+
+  <!-- ==================== LOGIN & CREATE ACCOUNT SCREEN ==================== -->
+  <div id="authScreen" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4">
+    <div class="glass-panel border border-cyan-500/40 rounded-3xl p-6 sm:p-8 max-w-md w-full neon-border space-y-6">
+      
+      <div class="text-center space-y-2">
+        <div class="w-14 h-14 chrome-gradient rounded-2xl mx-auto flex items-center justify-center text-slate-950 font-black text-2xl shadow-xl shadow-cyan-500/20">
+          SC
+        </div>
+        <h1 class="text-2xl font-black bg-gradient-to-r from-cyan-400 to-indigo-400 bg-clip-text text-transparent">
+          SocialConnect
+        </h1>
+        <p class="text-xs text-cyan-400/80 font-mono tracking-widest uppercase">Bete OS Access Portal</p>
+      </div>
+
+      <div class="flex bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
+        <button id="tab-login-btn" onclick="setAuthMode('login')" class="flex-1 py-2 font-bold rounded-lg bg-cyan-500 text-slate-950 transition">
+          Sign In
+        </button>
+        <button id="tab-register-btn" onclick="setAuthMode('register')" class="flex-1 py-2 font-bold rounded-lg text-slate-400 hover:text-white transition">
+          Create Account
+        </button>
+      </div>
+
+      <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-4 text-xs">
+        <div id="field-fullname" class="hidden space-y-1">
+          <label class="block text-slate-400 font-mono">Full Name</label>
+          <input id="inputFullName" type="text" placeholder="Alex Mercer" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-cyan-400" />
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-slate-400 font-mono">Username or Email</label>
+          <input id="inputUsername" type="text" required placeholder="alex_mercer" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-cyan-400" />
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-slate-400 font-mono">Password</label>
+          <input id="inputPassword" type="password" required placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-cyan-400" />
+        </div>
+
+        <button type="submit" id="authSubmitBtn" class="w-full py-3 chrome-gradient text-slate-950 font-black text-xs rounded-xl shadow-lg hover:opacity-90 transition mt-2">
+          Sign In to SocialConnect
+        </button>
+      </form>
+
+      <div class="text-center pt-2 border-t border-slate-800">
+        <button onclick="loginAsGuest()" class="text-xs text-slate-400 hover:text-cyan-400 transition font-mono">
+          ⚡ Continue as Guest Demo
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== MAIN APPLICATION CONTAINER ==================== -->
+  <div id="appContainer" class="hidden">
+    
+    <!-- TOP HEADER (FACEBOOK STYLE) -->
+    <header class="sticky top-0 z-40 glass-panel border-b border-cyan-500/20 px-4 py-2.5 flex items-center justify-between">
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('feed')">
+        <div class="w-10 h-10 rounded-xl chrome-gradient flex items-center justify-center text-slate-950 font-extrabold text-xl shadow-lg">
+          SC
+        </div>
+        <div>
+          <h1 class="font-bold text-lg bg-gradient-to-r from-cyan-400 to-indigo-400 bg-clip-text text-transparent leading-none">
+            SocialConnect
+          </h1>
+          <p class="text-[9px] text-cyan-400/70 font-mono tracking-widest uppercase">By Bete Technologies</p>
+        </div>
+      </div>
+
+      <!-- Header Quick Actions -->
+      <div class="flex items-center space-x-2">
+        <button onclick="switchTab('sub')" class="gold-gradient text-slate-950 font-extrabold text-xs px-3 py-1.5 rounded-xl shadow-md hover:scale-105 transition flex items-center space-x-1">
+          <span>💎</span>
+          <span id="headerSubBadge">Get Verified</span>
+        </button>
+
+        <button onclick="switchTab('saved')" class="bg-slate-900 border border-cyan-500/30 w-9 h-9 rounded-xl flex items-center justify-center hover:border-cyan-400 transition" title="Saved & Favorites">
+          <span class="text-base">🔖</span>
+        </button>
+
+        <button onclick="toggleChat()" class="relative bg-slate-900 border border-cyan-500/30 w-9 h-9 rounded-xl flex items-center justify-center hover:border-cyan-400 transition">
+          <span class="text-base">💬</span>
+          <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">2</span>
+        </button>
+
+        <button onclick="switchTab('profile')" class="flex items-center space-x-1.5 bg-slate-900 border border-cyan-500/30 px-2.5 py-1.5 rounded-xl hover:border-cyan-400 transition">
+          <div class="w-6 h-6 rounded-full bg-cyan-500/30 text-xs flex items-center justify-center">👤</div>
+          <span id="headerUsername" class="text-xs font-bold text-slate-200 hidden sm:inline">User</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN VIEW AREA -->
+    <main class="max-w-3xl w-full mx-auto p-4 pb-28">
+
+      <!-- ==================== 1. FEED TAB ==================== -->
+      <div id="tab-feed" class="space-y-5">
+        <div class="glass-panel rounded-2xl p-4 border border-cyan-500/30 neon-border">
+          <div class="flex items-center space-x-3 mb-3">
+            <div class="w-10 h-10 rounded-full bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-lg">👤</div>
+            <input id="postInput" type="text" placeholder="What's on your mind? Broadcast to SocialConnect..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400" />
+          </div>
+          <div class="flex items-center justify-between border-t border-slate-800 pt-3 text-xs">
+            <div class="flex space-x-3 text-slate-400">
+              <button onclick="alert('Camera snapshot active!')" class="hover:text-cyan-400 flex items-center space-x-1"><span>📷</span> <span>Camera</span></button>
+              <button onclick="alert('Microphone recording active!')" class="hover:text-indigo-400 flex items-center space-x-1"><span>🎙️</span> <span>Voice</span></button>
+              <button onclick="switchTab('shorts')" class="hover:text-pink-400 flex items-center space-x-1"><span>🎬</span> <span>Short Reel</span></button>
+            </div>
+            <button onclick="addPost()" class="chrome-gradient text-slate-950 font-bold px-5 py-2 rounded-xl text-xs hover:opacity-90 transition shadow-md">Publish</button>
+          </div>
+        </div>
+        <div id="postsList" class="space-y-4"></div>
+      </div>
+
+      <!-- ==================== 2. SHORTS TAB ==================== -->
+      <div id="tab-shorts" class="hidden space-y-4">
+        <div class="flex justify-between items-center px-1">
+          <h2 class="text-base font-bold text-slate-100 flex items-center space-x-2"><span>🎬</span> <span>Neural Streams (Shorts)</span></h2>
+          <span class="text-xs text-pink-400 font-mono">● Auto-Playing HD</span>
+        </div>
+        <div class="relative w-full h-[480px] bg-slate-900 rounded-2xl border border-pink-500/30 overflow-hidden flex flex-col justify-end p-6 shadow-2xl">
+          <div class="absolute inset-0 chrome-gradient opacity-20 flex items-center justify-center text-6xl">🎥</div>
+          <div class="relative z-10 flex justify-between items-end">
+            <div class="space-y-2 max-w-xs">
+              <div class="flex items-center space-x-2">
+                <div class="w-9 h-9 rounded-full bg-pink-500/30 border border-pink-400 flex items-center justify-center text-sm">👤</div>
+                <span class="font-bold text-sm text-white">Elena Cyber</span>
+                <span class="text-amber-400 text-xs">✓ Verified</span>
+              </div>
+              <p class="text-xs text-slate-200">Testing the new 4K Neural Stream video engine on Bete OS! 🚀</p>
+            </div>
+            <div class="flex flex-col items-center space-y-4 text-xs font-bold">
+              <button onclick="alert('Liked Reel!')" class="flex flex-col items-center hover:text-pink-400">
+                <span class="p-3 bg-slate-950/70 rounded-full text-lg border border-white/10">❤️</span>
+                <span class="text-[10px] mt-1">14.2k</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== 3. GAMES TAB ==================== -->
+      <div id="tab-arcade" class="hidden space-y-5">
+        <div class="glass-panel rounded-2xl p-5 border border-cyan-500/30 neon-border flex justify-between items-center">
+          <div>
+            <span class="px-2.5 py-0.5 bg-cyan-500/20 text-cyan-300 font-mono text-[10px] uppercase tracking-widest rounded-full border border-cyan-500/40">Multiplayer Hub</span>
+            <h2 class="text-xl font-black text-slate-100 mt-1">SocialConnect <span class="text-cyan-400">Games</span></h2>
+          </div>
+          <button onclick="challengeFriend('Aria Vance')" class="px-4 py-2 bg-emerald-500 text-slate-950 font-bold text-xs rounded-xl shadow-lg hover:bg-emerald-400">⚔️ Challenge Friend</button>
+        </div>
+
+        <div class="flex space-x-2 bg-slate-900 p-1.5 rounded-xl border border-slate-800 text-xs">
+          <button onclick="loadGame('pool')" id="btn-pool" class="flex-1 py-2 font-bold rounded-lg bg-cyan-500 text-slate-950">🎱 8 Ball Pool</button>
+          <button onclick="loadGame('runner')" id="btn-runner" class="flex-1 py-2 font-bold rounded-lg text-slate-400 hover:text-white">🏎️ Cyber Runner</button>
+          <button onclick="loadGame('web')" id="btn-web" class="flex-1 py-2 font-bold rounded-lg text-slate-400 hover:text-white">🌐 Online Games</button>
+        </div>
+
+        <div id="gameContainer-pool" class="glass-panel rounded-2xl p-5 border border-emerald-500/30 text-center space-y-3">
+          <div class="flex justify-between items-center text-xs font-mono">
+            <span class="text-cyan-400" id="gamePlayer1">Player 1: You</span>
+            <span class="text-amber-400 font-bold">🎱 8 Ball Pool</span>
+            <span class="text-indigo-400">Player 2: Aria Vance</span>
+          </div>
+          <div class="relative flex justify-center">
+            <canvas id="poolCanvas" width="480" height="240" class="shadow-2xl max-w-full cursor-crosshair"></canvas>
+          </div>
+          <div class="flex justify-between items-center text-xs">
+            <p class="text-slate-400 text-[11px]">Click and drag cue ball to set aim and power!</p>
+            <button onclick="resetPoolGame()" class="px-3 py-1 bg-slate-900 border border-slate-700 text-slate-300 rounded-lg">🔄 Reset Table</button>
+          </div>
+        </div>
+
+        <div id="gameContainer-runner" class="hidden glass-panel rounded-2xl p-8 text-center border border-cyan-500/30">
+          <div class="text-5xl mb-2">🏎️</div>
+          <h3 class="text-base font-bold text-cyan-300">Cyber Runner 2099</h3>
+          <button onclick="alert('Game Started!')" class="px-5 py-2 chrome-gradient text-slate-950 font-bold text-xs rounded-xl mt-3">Start Game</button>
+        </div>
+
+        <div id="gameContainer-web" class="hidden glass-panel rounded-2xl p-4 border border-slate-800 space-y-3">
+          <div class="h-80 rounded-xl overflow-hidden border border-slate-800 bg-slate-900">
+            <iframe id="externalGameFrame" src="https://play.gamepix.com/8-ball-pool-billiards/embed" class="w-full h-full border-0"></iframe>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== 4. USER SUBSCRIPTIONS TAB ==================== -->
+      <div id="tab-sub" class="hidden space-y-5">
+        <div class="glass-panel rounded-2xl p-6 border border-amber-500/30 gold-border text-center">
+          <span class="px-3 py-1 bg-amber-500/20 text-amber-300 font-mono text-[10px] uppercase rounded-full border border-amber-500/40">Official Subscriptions</span>
+          <h2 class="text-2xl font-black text-slate-100 mt-2 mb-1">Upgrade to <span class="bg-gradient-to-r from-amber-400 via-amber-200 to-yellow-500 bg-clip-text text-transparent">Bete Verified</span></h2>
+          <p class="text-xs text-slate-300">Get verified checkmarks, 2x algorithm boost, and 4K Neural Stream uploads.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div class="glass-panel rounded-2xl p-4 border border-slate-800 flex flex-col justify-between">
+            <div>
+              <span class="text-xs font-bold text-slate-400">Bete Basic</span>
+              <div class="text-xl font-black text-slate-100 my-1">$4.99 <span class="text-xs font-normal text-slate-400">/mo</span></div>
+              <ul class="text-[11px] text-slate-300 space-y-1 mb-3">
+                <li>✓ Cyan Verified Badge</li>
+                <li>✓ 1080p Media Uploads</li>
+              </ul>
+            </div>
+            <button onclick="checkoutModal('Bete Basic', '$4.99')" class="w-full py-2 bg-slate-800 text-slate-200 font-bold text-xs rounded-xl hover:bg-slate-700">Subscribe $4.99</button>
+          </div>
+
+          <div class="glass-panel rounded-2xl p-4 border-2 border-amber-500/60 gold-border flex flex-col justify-between">
+            <div>
+              <span class="text-xs font-bold text-amber-400">Bete Pro Verified</span>
+              <div class="text-xl font-black text-amber-300 my-1">$14.99 <span class="text-xs font-normal text-slate-400">/mo</span></div>
+              <ul class="text-[11px] text-slate-200 space-y-1 mb-3">
+                <li>✓ Gold Verified Checkmark ✓</li>
+                <li>✓ 2x Algorithm Boost</li>
+              </ul>
+            </div>
+            <button onclick="checkoutModal('Bete Pro Verified', '$14.99')" class="w-full py-2.5 gold-gradient text-slate-950 font-black text-xs rounded-xl hover:opacity-90">Subscribe $14.99</button>
+          </div>
+
+          <div class="glass-panel rounded-2xl p-4 border border-indigo-500/40 flex flex-col justify-between">
+            <div>
+              <span class="text-xs font-bold text-indigo-400">Founder VIP Pass</span>
+              <div class="text-xl font-black text-indigo-200 my-1">$49.99 <span class="text-xs font-normal text-slate-400">/mo</span></div>
+              <ul class="text-[11px] text-slate-300 space-y-1 mb-3">
+                <li>✓ Animated Glow Icon</li>
+                <li>✓ Priority VIP Support</li>
+              </ul>
+            </div>
+            <button onclick="checkoutModal('Founder VIP Pass', '$49.99')" class="w-full py-2 bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-bold text-xs rounded-xl hover:bg-indigo-500/30">Subscribe $49.99</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== 5. SAVED & FAVORITES TAB ==================== -->
+      <div id="tab-saved" class="hidden space-y-4">
+        <div class="flex justify-between items-center px-1">
+          <h2 class="text-base font-bold text-slate-100 flex items-center space-x-2"><span>🔖</span> <span>Saved & Favorites</span></h2>
+          <span class="text-xs text-cyan-400 font-mono" id="savedCountLabel">0 Saved Items</span>
+        </div>
+        <div id="savedItemsList" class="space-y-3">
+          <div class="glass-panel rounded-2xl p-6 text-center text-xs text-slate-400 border border-slate-800">
+            No saved posts yet. Click "🔖 Save" on any feed post to add it here.
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== 6. MARKETPLACE TAB ==================== -->
+      <div id="tab-marketplace" class="hidden space-y-4">
+        <div class="flex justify-between items-center">
+          <h2 class="text-base font-bold text-slate-100 flex items-center space-x-2"><span>🛒</span> <span>Cyber Marketplace</span></h2>
+          <button onclick="alert('Create Item Listing modal')" class="px-3 py-1 bg-cyan-500 text-slate-950 font-bold text-xs rounded-lg">+ Sell Item</button>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="glass-panel rounded-xl p-3 border border-slate-800">
+            <div class="h-28 bg-slate-900 rounded-lg flex items-center justify-center text-3xl mb-2">💻</div>
+            <h3 class="font-bold text-xs text-slate-200">Bete Neural Deck v1</h3>
+            <p class="text-xs text-cyan-400 font-mono font-bold mt-1">$450.00</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== 7. USER PROFILE TAB ==================== -->
+      <div id="tab-profile" class="hidden space-y-5">
+        <div class="glass-panel rounded-2xl overflow-hidden border border-cyan-500/30">
+          <div class="h-32 chrome-gradient relative flex items-end justify-end p-3">
+            <button onclick="alert('Cover updated!')" class="bg-slate-950/70 text-xs px-3 py-1 rounded-lg border border-white/20">📷 Change Cover</button>
+          </div>
+          <div class="px-5 pb-5 pt-0">
+            <div class="flex justify-between items-end -mt-10 mb-3">
+              <div class="w-20 h-20 rounded-2xl bg-slate-900 border-2 border-cyan-400 flex items-center justify-center text-3xl shadow-xl">👤</div>
+              <button onclick="editProfileModal()" class="px-4 py-1.5 bg-cyan-500 text-slate-950 font-bold text-xs rounded-xl">✏️ Edit Profile</button>
+            </div>
+            <h2 id="profileDisplayName" class="text-xl font-bold text-slate-100">User Account</h2>
+            <p id="profileHandle" class="text-xs font-mono text-cyan-400/80">@social_user</p>
+            <p id="profileSubStatus" class="text-xs text-amber-400 font-mono mt-1">Status: Free Member</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== 8. FULL SETTINGS, PRIVACY, SECURITY & MENU ==================== -->
+      <div id="tab-settings" class="hidden space-y-6">
+        
+        <!-- Header -->
+        <div class="flex justify-between items-center">
+          <h2 class="text-lg font-bold text-slate-100">Menu & Settings</h2>
+          <span class="text-xs text-cyan-400 font-mono">Bete OS Security Engine v3.0</span>
+        </div>
+
+        <!-- Facebook Style Menu Grid Shortcuts -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+          <button onclick="switchTab('sub')" class="glass-panel p-3 rounded-2xl border border-amber-500/30 text-left hover:border-amber-400 transition">
+            <span class="text-xl block mb-1">💎</span>
+            <p class="font-bold text-amber-300">Subscriptions</p>
+            <p class="text-[10px] text-slate-400">Get Verified</p>
+          </button>
+          
+          <button onclick="switchTab('arcade')" class="glass-panel p-3 rounded-2xl border border-cyan-500/30 text-left hover:border-cyan-400 transition">
+            <span class="text-xl block mb-1">🎮</span>
+            <p class="font-bold text-cyan-300">Games Hub</p>
+            <p class="text-[10px] text-slate-400">8 Ball Pool</p>
+          </button>
+
+          <button onclick="switchTab('saved')" class="glass-panel p-3 rounded-2xl border border-purple-500/30 text-left hover:border-purple-400 transition">
+            <span class="text-xl block mb-1">🔖</span>
+            <p class="font-bold text-purple-300">Saved Items</p>
+            <p class="text-[10px] text-slate-400">Bookmarks & Favs</p>
+          </button>
+
+          <button onclick="switchTab('marketplace')" class="glass-panel p-3 rounded-2xl border border-emerald-500/30 text-left hover:border-emerald-400 transition">
+            <span class="text-xl block mb-1">🛒</span>
+            <p class="font-bold text-emerald-300">Marketplace</p>
+            <p class="text-[10px] text-slate-400">Buy & Sell</p>
+          </button>
+        </div>
+
+        <!-- Privacy Settings Section -->
+        <div class="glass-panel rounded-2xl p-5 border border-cyan-500/30 space-y-3">
+          <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center space-x-1">
+            <span>🔒 Privacy Settings</span>
+          </h3>
+          <div class="space-y-2 text-xs">
+            <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+              <div>
+                <p class="font-bold text-slate-200">Default Post Audience</p>
+                <p class="text-[10px] text-slate-500">Who can see your posts?</p>
+              </div>
+              <select class="bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1">
+                <option>Public Network</option>
+                <option>Followers Only</option>
+                <option>Only Me</option>
+              </select>
+            </div>
+
+            <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+              <div>
+                <p class="font-bold text-slate-200">Profile Lock Protection</p>
+                <p class="text-[10px] text-slate-500">Hide posts from non-followers</p>
+              </div>
+              <input type="checkbox" checked class="w-4 h-4 accent-cyan-500" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Security & Login Section -->
+        <div class="glass-panel rounded-2xl p-5 border border-slate-800 space-y-3">
+          <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center space-x-1">
+            <span>🛡️ Security & Accounts Center</span>
+          </h3>
+          <div class="space-y-2 text-xs">
+            <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+              <div>
+                <p class="font-bold text-slate-200">Two-Factor Authentication (2FA)</p>
+                <p class="text-[10px] text-emerald-400 font-mono">Protected by Bete Security</p>
+              </div>
+              <button onclick="alert('2FA is active on your device.')" class="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-lg">Active</button>
+            </div>
+
+            <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+              <div>
+                <p class="font-bold text-slate-200">Active Devices & Sessions</p>
+                <p class="text-[10px] text-slate-500">1 Mobile Session Active</p>
+              </div>
+              <button onclick="alert('Viewing 1 active session.')" class="px-2.5 py-1 bg-slate-800 text-slate-300 rounded-lg">View</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- APP OWNER REVENUE DASHBOARD (PRIVATE ADMIN PANEL) -->
+        <div class="glass-panel rounded-2xl p-5 border border-amber-500/40 gold-border space-y-4">
+          <div class="flex justify-between items-center">
+            <div>
+              <h3 class="text-sm font-bold text-amber-300">👑 App Owner Revenue Dashboard</h3>
+              <p class="text-[10px] text-slate-400">Private Admin View — Total User Subscriptions Collected</p>
+            </div>
+            <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-mono rounded border border-emerald-500/30">Bete Owner</span>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div class="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+              <p class="text-[9px] text-slate-500 uppercase font-mono">Total Collected</p>
+              <p class="text-base font-black text-amber-400 mt-0.5">$14,850.00</p>
+            </div>
+            <div class="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+              <p class="text-[9px] text-slate-500 uppercase font-mono">Paid Users</p>
+              <p class="text-base font-black text-cyan-400 mt-0.5">1,240</p>
+            </div>
+            <div class="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+              <p class="text-[9px] text-slate-500 uppercase font-mono">Payout Ready</p>
+              <p class="text-base font-black text-emerald-400 mt-0.5">$14,850.00</p>
+            </div>
+          </div>
+
+          <button onclick="alert('Payout requested to your Bank Account!')" class="w-full py-2.5 bg-emerald-500 text-slate-950 font-black text-xs rounded-xl shadow-lg hover:bg-emerald-400">
+            💸 Withdraw Revenue to My Bank Account
+          </button>
+        </div>
+
+        <!-- Log Out Button -->
+        <button onclick="logout()" class="w-full py-3 bg-red-500/20 text-red-400 border border-red-500/30 rounded-2xl font-bold text-xs hover:bg-red-500/30 transition">
+          🚪 Log Out of SocialConnect
+        </button>
+
+      </div>
+
+    </main>
+
+    <!-- FLOATING MESSENGER OVERLAY -->
+    <div id="chatBox" class="hidden fixed bottom-20 right-4 w-80 glass-panel border border-cyan-500/40 rounded-2xl shadow-2xl z-50 flex flex-col h-96">
+      <div class="p-3 border-b border-slate-800 flex justify-between items-center">
+        <span class="text-xs font-bold text-cyan-300">Cyber Messenger</span>
+        <button onclick="toggleChat()" class="text-slate-400">✕</button>
+      </div>
+      <div id="chatMessages" class="flex-1 p-3 overflow-y-auto space-y-2 text-xs">
+        <div class="bg-slate-900 border border-slate-800 text-slate-300 p-2 rounded-xl max-w-[85%]">
+          Hey! Send a message or invite a contact to an 8 Ball Pool match. 🎱
+        </div>
+      </div>
+      <div class="p-2 border-t border-slate-800 flex space-x-2">
+        <input id="chatInput" type="text" placeholder="Type a message..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none" />
+        <button onclick="sendMessage()" class="bg-cyan-500 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs">Send</button>
+      </div>
+    </div>
+
+    <!-- CHECKOUT MODAL -->
+    <div id="checkoutModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      <div class="glass-panel border border-amber-500/40 rounded-2xl p-5 max-w-sm w-full space-y-3 gold-border">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+          <h3 class="text-xs font-bold text-amber-300">Subscribe: <span id="checkoutPlanTitle">Plan</span></h3>
+          <button onclick="closeCheckout()" class="text-slate-400">✕</button>
+        </div>
+        <div class="text-center py-1">
+          <p class="text-2xl font-black text-slate-100" id="checkoutPrice">$0.00</p>
+        </div>
+        <button onclick="confirmSubscription()" class="w-full py-2.5 gold-gradient text-slate-950 font-black text-xs rounded-xl shadow-lg">Pay & Activate Subscription</button>
+      </div>
+    </div>
+
+    <!-- BOTTOM NAVIGATION BAR (FACEBOOK STYLE) -->
+    <nav class="fixed bottom-0 left-0 right-0 glass-panel border-t border-cyan-500/20 px-2 py-1.5 flex justify-around text-xs z-40">
+      <button id="nav-feed" onclick="switchTab('feed')" class="flex flex-col items-center p-1 text-cyan-400 font-bold">
+        <span class="text-base">🌐</span><span class="text-[10px]">Feed</span>
+      </button>
+      <button id="nav-shorts" onclick="switchTab('shorts')" class="flex flex-col items-center p-1 text-slate-400">
+        <span class="text-base">🎬</span><span class="text-[10px]">Shorts</span>
+      </button>
+      <button id="nav-arcade" onclick="switchTab('arcade')" class="flex flex-col items-center p-1 text-slate-400">
+        <span class="text-base">🎮</span><span class="text-[10px]">Games</span>
+      </button>
+      <button id="nav-saved" onclick="switchTab('saved')" class="flex flex-col items-center p-1 text-slate-400">
+        <span class="text-base">🔖</span><span class="text-[10px]">Saved</span>
+      </button>
+      <button id="nav-sub" onclick="switchTab('sub')" class="flex flex-col items-center p-1 text-slate-400">
+        <span class="text-base">💎</span><span class="text-[10px]">Subscribe</span>
+      </button>
+      <button id="nav-settings" onclick="switchTab('settings')" class="flex flex-col items-center p-1 text-slate-400">
+        <span class="text-base">⚙️</span><span class="text-[10px]">Menu</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- APPLICATION LOGIC -->
+  <script>
+    let authMode = "login";
+    let activePlan = "Free";
+    let currentUser = null;
+    let savedPosts = [];
+
+    let posts = [
+      { id: 1, user: 'Aria Vance', time: '10m ago', text: 'Welcome to SocialConnect! Upgrade to Bete Verified to get your checkmark.', likes: 24, verified: true },
+      { id: 2, user: 'Kaelen Voss', time: '1h ago', text: 'Challenging anyone to an 8 Ball Pool match in the Games tab! 🎱', likes: 58, verified: true }
+    ];
+
+    function setAuthMode(mode) {
+      authMode = mode;
+      const isReg = mode === 'register';
+      document.getElementById('field-fullname').classList.toggle('hidden', !isReg);
+      document.getElementById('tab-login-btn').className = !isReg ? "flex-1 py-2 font-bold rounded-lg bg-cyan-500 text-slate-950" : "flex-1 py-2 font-bold rounded-lg text-slate-400 hover:text-white";
+      document.getElementById('tab-register-btn').className = isReg ? "flex-1 py-2 font-bold rounded-lg bg-cyan-500 text-slate-950" : "flex-1 py-2 font-bold rounded-lg text-slate-400 hover:text-white";
+      document.getElementById('authSubmitBtn').innerText = isReg ? "Create My Account" : "Sign In to SocialConnect";
+    }
+
+    function handleAuthSubmit(e) {
+      e.preventDefault();
+      const usernameVal = document.getElementById('inputUsername').value;
+      const fullNameVal = document.getElementById('inputFullName').value || usernameVal;
+      
+      currentUser = {
+        name: fullNameVal,
+        handle: "@" + usernameVal.toLowerCase().replace(/\s+/g, '_')
+      };
+
+      launchApp();
+    }
+
+    function loginAsGuest() {
+      currentUser = { name: "Guest User", handle: "@guest_user" };
+      launchApp();
+    }
+
+    function launchApp() {
+      document.getElementById('authScreen').classList.add('hidden');
+      document.getElementById('appContainer').classList.remove('hidden');
+
+      document.getElementById('headerUsername').innerText = currentUser.name;
+      document.getElementById('profileDisplayName').innerText = currentUser.name;
+      document.getElementById('profileHandle').innerText = currentUser.handle;
+      document.getElementById('gamePlayer1').innerText = `Player 1: ${currentUser.name}`;
+
+      renderPosts();
+    }
+
+    function logout() {
+      currentUser = null;
+      document.getElementById('appContainer').classList.add('hidden');
+      document.getElementById('authScreen').classList.remove('hidden');
+    }
+
+    function renderPosts() {
+      const container = document.getElementById('postsList');
+      container.innerHTML = posts.map(post => `
+        <div class="glass-panel rounded-2xl p-5 border border-slate-800">
+          <div class="flex items-center space-x-3 mb-3">
+            <div class="w-10 h-10 rounded-full bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center text-lg">👤</div>
+            <div>
+              <div class="flex items-center space-x-1.5">
+                <span class="font-bold text-sm">${post.user}</span>
+                ${post.verified ? '<span class="text-amber-400 text-xs font-bold">✓ Verified</span>' : ''}
+              </div>
+              <span class="text-xs text-slate-500">${post.time}</span>
+            </div>
+          </div>
+          <p class="text-sm text-slate-300 mb-4">${post.text}</p>
+          <div class="flex justify-between border-t border-slate-800 pt-3 text-xs text-slate-400">
+            <button onclick="likePost(${post.id})" class="hover:text-cyan-400">⚡ Pulse (${post.likes})</button>
+            <button onclick="toggleChat()" class="hover:text-cyan-400">💬 Comment</button>
+            <button onclick="savePost(${post.id})" class="hover:text-purple-400">🔖 Save</button>
+            <button onclick="switchTab('sub')" class="hover:text-amber-400 font-bold text-amber-400">💎 Upgrade</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function addPost() {
+      const input = document.getElementById('postInput');
+      if (!input.value.trim()) return;
+      posts.unshift({ id: Date.now(), user: `${currentUser.name} (You)`, time: 'Just now', text: input.value, likes: 0, verified: activePlan !== "Free" });
+      input.value = '';
+      renderPosts();
+    }
+
+    function likePost(id) {
+      posts = posts.map(p => p.id === id ? { ...p, likes: p.likes + 1 } : p);
+      renderPosts();
+    }
+
+    function savePost(id) {
+      const target = posts.find(p => p.id === id);
+      if (target && !savedPosts.some(s => s.id === id)) {
+        savedPosts.push(target);
+        renderSavedPosts();
+        alert('🔖 Post added to your Saved & Favorites tab!');
+      }
+    }
+
+    function renderSavedPosts() {
+      document.getElementById('savedCountLabel').innerText = `${savedPosts.length} Saved Items`;
+      const container = document.getElementById('savedItemsList');
+      if (savedPosts.length === 0) {
+        container.innerHTML = `<div class="glass-panel rounded-2xl p-6 text-center text-xs text-slate-400 border border-slate-800">No saved posts yet. Click "🔖 Save" on any feed post to add it here.</div>`;
+        return;
+      }
+      container.innerHTML = savedPosts.map(post => `
+        <div class="glass-panel rounded-2xl p-4 border border-purple-500/30 text-xs">
+          <div class="flex justify-between items-center mb-2">
+            <span class="font-bold text-purple-300">${post.user}</span>
+            <span class="text-slate-500 text-[10px]">${post.time}</span>
+          </div>
+          <p class="text-slate-200 mb-2">${post.text}</p>
+          <button onclick="removeSavedPost(${post.id})" class="text-red-400 hover:underline text-[10px]">Remove from Saved</button>
+        </div>
+      `).join('');
+    }
+
+    function removeSavedPost(id) {
+      savedPosts = savedPosts.filter(s => s.id !== id);
+      renderSavedPosts();
+    }
+
+    function switchTab(tabName) {
+      const tabs = ['feed', 'shorts', 'arcade', 'sub', 'saved', 'marketplace', 'profile', 'settings'];
+      tabs.forEach(tab => {
+        const el = document.getElementById('tab-' + tab);
+        if (el) el.classList.toggle('hidden', tab !== tabName);
+        const navBtn = document.getElementById('nav-' + tab);
+        if (navBtn) navBtn.className = tab === tabName ? "flex flex-col items-center p-1 text-cyan-400 font-bold" : "flex flex-col items-center p-1 text-slate-400";
+      });
+      if (tabName === 'arcade') initPoolPhysics();
+      if (tabName === 'saved') renderSavedPosts();
+    }
+
+    function loadGame(gameType) {
+      ['pool', 'runner', 'web'].forEach(g => {
+        document.getElementById('gameContainer-' + g).classList.toggle('hidden', g !== gameType);
+        const btn = document.getElementById('btn-' + g);
+        if (btn) btn.className = g === gameType ? "flex-1 py-2 font-bold rounded-lg bg-cyan-500 text-slate-950" : "flex-1 py-2 font-bold rounded-lg text-slate-400 hover:text-white";
+      });
+      if (gameType === 'pool') initPoolPhysics();
+    }
+
+    function toggleChat() {
+      document.getElementById('chatBox').classList.toggle('hidden');
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('chatInput');
+      const messages = document.getElementById('chatMessages');
+      if (!input.value.trim()) return;
+      const userText = input.value;
+      messages.innerHTML += `<div class="bg-cyan-500 text-slate-950 p-2 rounded-xl max-w-[85%] ml-auto font-medium">${userText}</div>`;
+      input.value = '';
+      setTimeout(() => {
+        messages.innerHTML += `<div class="bg-slate-900 border border-slate-800 text-slate-300 p-2 rounded-xl max-w-[85%]">Aria Vance: Received "${userText}"! Want to play 8 ball pool?</div>`;
+        messages.scrollTop = messages.scrollHeight;
+      }, 800);
+    }
+
+    function checkoutModal(planName, price) {
+      document.getElementById('checkoutPlanTitle').innerText = planName;
+      document.getElementById('checkoutPrice').innerText = price;
+      document.getElementById('checkoutModal').classList.remove('hidden');
+    }
+
+    function closeCheckout() {
+      document.getElementById('checkoutModal').classList.add('hidden');
+    }
+
+    function confirmSubscription() {
+      closeCheckout();
+      alert(`🎉 Payment successful! Subscription active. Your verified checkmark is enabled.`);
+    }
+
+    function editProfileModal() {
+      const newName = prompt("Enter display name:", currentUser.name);
+      if (newName) {
+        currentUser.name = newName;
+        document.getElementById('profileDisplayName').innerText = newName;
+        document.getElementById('headerUsername').innerText = newName;
+      }
+    }
+
+    function challengeFriend(friendName) {
+      toggleChat();
+      const messages = document.getElementById('chatMessages');
+      messages.innerHTML += `<div class="bg-amber-500/20 text-amber-300 p-2 rounded-xl border border-amber-500/30 text-center font-bold">⚔️ 8 Ball Pool Challenge Sent to ${friendName}!</div>`;
+    }
+
+    // 8 Ball Pool Physics Canvas Engine
+    let canvas, ctx, balls = [], cueBall, isAiming = false, dragStart = { x: 0, y: 0 }, dragCurrent = { x: 0, y: 0 };
+    function initPoolPhysics() {
+      canvas = document.getElementById('poolCanvas');
+      if (!canvas) return;
+      ctx = canvas.getContext('2d');
+      cueBall = { x: 120, y: 120, vx: 0, vy: 0, color: '#ffffff', radius: 8 };
+      balls = [
+        cueBall,
+        { x: 320, y: 120, vx: 0, vy: 0, color: '#f59e0b', radius: 8 },
+        { x: 336, y: 112, vx: 0, vy: 0, color: '#3b82f6', radius: 8 },
+        { x: 336, y: 128, vx: 0, vy: 0, color: '#ef4444', radius: 8 },
+        { x: 352, y: 120, vx: 0, vy: 0, color: '#09090b', radius: 8 }
+      ];
+      canvas.onmousedown = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+        if (Math.hypot(mx - cueBall.x, my - cueBall.y) < 30) {
+          isAiming = true; dragStart = { x: cueBall.x, y: cueBall.y }; dragCurrent = { x: mx, y: my };
+        }
+      };
+      canvas.onmousemove = (e) => {
+        if (!isAiming) return;
+        const rect = canvas.getBoundingClientRect();
+        dragCurrent = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      };
+      canvas.onmouseup = () => {
+        if (!isAiming) return;
+        isAiming = false;
+        cueBall.vx = (dragStart.x - dragCurrent.x) * 0.15;
+        cueBall.vy = (dragStart.y - dragCurrent.y) * 0.15;
+      };
+      requestAnimationFrame(updatePoolGame);
+    }
+    function updatePoolGame() {
+      if (!ctx) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      [{x: 10, y: 10}, {x: 240, y: 8}, {x: 470, y: 10}, {x: 10, y: 230}, {x: 240, y: 232}, {x: 470, y: 230}].forEach(p => {
+        ctx.beginPath(); ctx.arc(p.x, p.y, 14, 0, Math.PI * 2); ctx.fillStyle = '#022c22'; ctx.fill();
+      });
+      balls.forEach(b => {
+        b.x += b.vx; b.y += b.vy; b.vx *= 0.98; b.vy *= 0.98;
+        if (b.x < 18 || b.x > canvas.width - 18) b.vx *= -1;
+        if (b.y < 18 || b.y > canvas.height - 18) b.vy *= -1;
+        ctx.beginPath(); ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2); ctx.fillStyle = b.color; ctx.fill(); ctx.stroke();
+      });
+      if (isAiming) {
+        ctx.beginPath(); ctx.moveTo(cueBall.x, cueBall.y); ctx.lineTo(dragCurrent.x, dragCurrent.y);
+        ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2; ctx.stroke();
+      }
+      requestAnimationFrame(updatePoolGame);
+    }
+    function resetPoolGame() { initPoolPhysics(); }
+  </script>
+</body>
+</html>
